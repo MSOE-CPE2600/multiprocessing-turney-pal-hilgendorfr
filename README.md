@@ -10,6 +10,6 @@ The changes to mandel.c started by generating all 50 images, zooming out, to a f
 
 Generated graph of results based on number of children:
 
-![image](~/sysprog_lab11_graph.png)
+![image](./sysprog_lab11_graph.png)
 
 You can see that the time for completion starts to increase after hitting a low at 10 children. This is likely due to the fact that the laptop the experiment was run on has 12 cores, meaning that going beyond 12 children will begin to hinder the CPU. This also means that 12 children is the sweet spot.
