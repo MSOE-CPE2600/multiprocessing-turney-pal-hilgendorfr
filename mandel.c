@@ -76,21 +76,26 @@ int main( int argc, char *argv[] )
 		}
 	}
 
-	double scaleInterval = (.00005 - xscale) / 50;
 	int imageCount = 50;
+	// scale increase for each subsequent image. Scale is 2x by default
+	double scaleInterval = xscale / imageCount;
 
 	// fork and let children create images.
 	for (int i = 0; i < childCount; i++) {
 		if (fork() == 0) {
+			// what image to start at
 			int start = i * (imageCount / childCount);
 			int end;
+			// decides ending image
 			if (i == childCount - 1) {
 				end = imageCount;
 			} else {
 				end = start + (imageCount / childCount);
 			}
 
+			// modified mandel algorithm
 		    for (int j = start; j < end; j++) {
+				// calculated scale for each image
 		    	double scale = xscale + j * scaleInterval;
 		    	// Calculate y scale based on x scale (settable)
 				// and image sizes in X and Y (settable)
