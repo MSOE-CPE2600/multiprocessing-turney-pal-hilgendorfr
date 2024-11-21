@@ -5,10 +5,14 @@
 //
 //  Converted to use jpg instead of BMP and other minor changes
 //  
+//  Modified by: Ryan Pal Hilgendorf
+//  Last Updated: 11/20/2024
 ///
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
+#include <sys/wait.h>
 #include "jpegrw.h"
 
 // local routines
@@ -25,7 +29,7 @@ int main( int argc, char *argv[] )
 
 	// These are the default configuration values used
 	// if no command line arguments are given.
-	const char *outfile = "mandel.jpg";
+	const char *outfile = "mandel";
 	double xcenter = 0;
 	double ycenter = 0;
 	double xscale = 4;
@@ -33,11 +37,11 @@ int main( int argc, char *argv[] )
 	int    image_width = 1000;
 	int    image_height = 1000;
 	int    max = 1000;
-
+	int    childCount = 8;
 	// For each command line argument given,
 	// override the appropriate configuration value.
 
-	while((c = getopt(argc,argv,"x:y:s:W:H:m:o:h"))!=-1) {
+	while((c = getopt(argc,argv,"x:y:s:W:H:m:o:c:h"))!=-1) {
 		switch(c) 
 		{
 			case 'x':
@@ -61,6 +65,9 @@ int main( int argc, char *argv[] )
 			case 'o':
 				outfile = optarg;
 				break;
+			case 'c':
+			    childCount = atoi(optarg);
+				break;
 			case 'h':
 				show_help();
 				exit(1);
@@ -68,27 +75,58 @@ int main( int argc, char *argv[] )
 		}
 	}
 
-	// Calculate y scale based on x scale (settable) and image sizes in X and Y (settable)
-	yscale = xscale / image_width * image_height;
+	double scaleInterval = (.00005 - xscale) / 50;
+	int imageCount = 50;
 
-	// Display the configuration of the image.
-	printf("mandel: x=%lf y=%lf xscale=%lf yscale=%1f max=%d outfile=%s\n",xcenter,ycenter,xscale,yscale,max,outfile);
+	// fork and let children create images.
+	for (int i = 0; i < childCount; i++) {
+		if (fork() == 0) {
+			int start = i * (imageCount / childCount);
+			int end;
+			if (i == childCount - 1) {
+				end = imageCount;
+			} else {
+				end = start + (imageCount / childCount);
+			}
 
-	// Create a raw image of the appropriate size.
-	imgRawImage* img = initRawImage(image_width,image_height);
+		    for (int j = start; j < end; j++) {
+		    	double scale = xscale + j * scaleInterval;
+		    	// Calculate y scale based on x scale (settable)
+				// and image sizes in X and Y (settable)
+		    	yscale = scale / image_width * image_height;
 
-	// Fill it with a black
-	setImageCOLOR(img,0);
+		    	// Create a raw image of the appropriate size.
+	            imgRawImage* img = initRawImage(image_width,image_height);
 
-	// Compute the Mandelbrot image
-	compute_image(img,xcenter-xscale/2,xcenter+xscale/2,ycenter-yscale/2,ycenter+yscale/2,max);
+	            // Fill it with a black
+	            setImageCOLOR(img,0);
 
-	// Save the image in the stated file.
-	storeJpegImageFile(img,outfile);
+	            // Compute the Mandelbrot image
+    	        compute_image(img,xcenter-scale/2,xcenter+scale/2, \
+		    	ycenter-yscale/2,ycenter+yscale/2,max);
 
-	// free the mallocs
-	freeRawImage(img);
+	            // Save the image in the stated file.
+	        	char output[100] = "";
+	        	sprintf(output, "%s%d.jpg", outfile, j+1);
+	            storeJpegImageFile(img,output);
 
+    	    	// Display the configuration of the image.
+            	printf("mandel: x=%lf y=%lf xscale=%lf yscale=%1f max=%d \
+				outfile=%s\n",xcenter,ycenter,scale,yscale,max,output);
+
+	            // free the mallocs
+	           freeRawImage(img);
+		    }
+			exit(1);
+		}
+	}
+
+	// parent waits for children to finish
+	int status;
+	for (int i = 0; i < childCount; i++) {
+		wait(&status);
+	}
+	printf("All Processes Finished.\n");
 	return 0;
 }
 
@@ -160,7 +198,7 @@ Modify this function to make more interesting colors.
 */
 int iteration_to_color( int iters, int max )
 {
-	int color = 0xFFFFFF*iters/(double)max;
+	int color = 0x0912FF*iters/(double)max;
 	return color;
 }
 
@@ -177,6 +215,7 @@ void show_help()
 	printf("-W <pixels> Width of the image in pixels. (default=1000)\n");
 	printf("-H <pixels> Height of the image in pixels. (default=1000)\n");
 	printf("-o <file>   Set output file. (default=mandel.bmp)\n");
+	printf("-c <count>  set the number of children the program will have (default=8)\n");
 	printf("-h          Show this help text.\n");
 	printf("\nSome examples are:\n");
 	printf("mandel -x -0.5 -y -0.5 -s 0.2\n");
