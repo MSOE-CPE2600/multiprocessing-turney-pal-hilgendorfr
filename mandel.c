@@ -113,7 +113,7 @@ int main( int argc, char *argv[] )
 
 	            // Save the image in the stated file.
 	        	char output[100] = "";
-	        	sprintf(output, "%s%d.jpg", outfile, j+1);
+	        	sprintf(output, "%s%02d.jpg", outfile, j+1);
 	            storeJpegImageFile(img,output);
 
     	    	// Display the configuration of the image.
