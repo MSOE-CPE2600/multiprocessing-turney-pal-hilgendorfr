@@ -5,6 +5,10 @@
 //
 //  Minor changes made to some types.
 //  Compile with -ljpeg
+//
+//  Name: Ryan Pal Hilgendorf
+//  Assignment: Lab 11 - Multiprocessing
+//  Secton: CPE 2600 121
 ///
 #include <stdlib.h>
 #include <stdio.h>

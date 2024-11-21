@@ -4,9 +4,10 @@
 //  https://users.cs.fiu.edu/~cpoellab/teaching/cop4610_fall22/project3.html
 //
 //  Converted to use jpg instead of BMP and other minor changes
-//  
-//  Modified by: Ryan Pal Hilgendorf
-//  Last Updated: 11/20/2024
+//
+//  Name: Ryan Pal Hilgendorf
+//  Assignment: Lab 11 - Multiprocessing
+//  Secton: CPE 2600 121
 ///
 #include <stdlib.h>
 #include <stdio.h>
