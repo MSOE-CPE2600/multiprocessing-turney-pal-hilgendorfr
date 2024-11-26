@@ -6,7 +6,7 @@
 //  Converted to use jpg instead of BMP and other minor changes
 //
 //  Name: Ryan Pal Hilgendorf
-//  Assignment: Lab 11 - Multiprocessing
+//  Assignment: Lab 11 & 12
 //  Secton: CPE 2600 121
 ///
 #include <stdlib.h>
@@ -14,15 +14,28 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <pthread.h>
 #include "jpegrw.h"
 
 // local routines
 static int iteration_to_color( int i, int max );
 static int iterations_at_point( double x, double y, int max );
 static void compute_image( imgRawImage *img, double xmin, double xmax,
-									double ymin, double ymax, int max );
+									double ymin, double ymax,
+									int max, int threadCount );
+void* threading(void* arg);
 static void show_help();
 
+typedef struct thread {
+	imgRawImage* image;
+	double xmin;
+	double xmax;
+	double ymin;
+	double ymax;
+	int max;
+	int threadCount;
+	pthread_t threadID;
+} thread;
 
 int main( int argc, char *argv[] )
 {
@@ -72,6 +85,10 @@ int main( int argc, char *argv[] )
 				break;
 			case 't':
 			    threadCount = atoi(optarg);
+				if (threadCount > 20) {
+					printf("Max thread count 20. Setting to max.");
+					threadCount = 20;
+				}
 				break;
 			case 'h':
 				show_help();
@@ -113,7 +130,7 @@ int main( int argc, char *argv[] )
 
 	            // Compute the Mandelbrot image
     	        compute_image(img,xcenter-scale/2,xcenter+scale/2, \
-		    	ycenter-yscale/2,ycenter+yscale/2,max);
+		    	ycenter-yscale/2,ycenter+yscale/2,max,threadCount);
 
 	            // Save the image in the stated file.
 	        	char output[100] = "";
@@ -169,36 +186,70 @@ int iterations_at_point( double x, double y, int max )
 	return iter;
 }
 
-/*
-Compute an entire Mandelbrot image, writing each point to the given bitmap.
-Scale the image to the range (xmin-xmax,ymin-ymax), limiting iterations to "max"
-*/
 
-void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, double ymax, int max )
-{
-	int i,j;
+// computes individual rows for each Mandelbrot image.
+void *threading(void *arg) {
+	thread *data = (thread*) arg;
+	imgRawImage *img = data->image;
 
 	int width = img->width;
 	int height = img->height;
 
-	// For every pixel in the image...
+	int threadRows = height / data->threadCount;
+	int start = data->threadID * threadRows;
+	int end;
+	if (data->threadID == data->threadCount - 1) {
+		end = height;
+	} else {
+		end = start + threadRows;
+	}
 
-	for(j=0;j<height;j++) {
-
-		for(i=0;i<width;i++) {
+	for(int j=start;j<end;j++) {
+		for(int i=0;i<width;i++) {
 
 			// Determine the point in x,y space for that pixel.
-			double x = xmin + i*(xmax-xmin)/width;
-			double y = ymin + j*(ymax-ymin)/height;
+			double x = data->xmin + i*(data->xmax-data->xmin)/width;
+			double y = data->ymin + j*(data->ymax-data->ymin)/height;
 
 			// Compute the iterations at that point.
-			int iters = iterations_at_point(x,y,max);
+			int iters = iterations_at_point(x,y,data->max);
 
 			// Set the pixel in the bitmap.
-			setPixelCOLOR(img,i,j,iteration_to_color(iters,max));
+			setPixelCOLOR(img,i,j,iteration_to_color(iters,data->max));
 		}
 	}
+	return NULL;
 }
+
+/*
+Compute an entire Mandelbrot image, writing each point to the given bitmap.
+Scale the image to the range (xmin-xmax,ymin-ymax), limiting iterations to "max"
+Calculations moved to threading()
+*/
+
+void compute_image(imgRawImage* img, double xmin, double xmax, double ymin, double ymax, int max, int threadCount )
+{	
+	pthread_t threads[threadCount];
+	// array is needed to avoid a "data race" caused by using the same structure of data.
+	thread passthroughThread[threadCount];
+
+	for (int i = 0; i < threadCount; i++) {
+		passthroughThread[i].image = img;
+		passthroughThread[i].xmin = xmin;
+		passthroughThread[i].xmax = xmax;
+		passthroughThread[i].ymin = ymin;
+		passthroughThread[i].ymax = ymax;
+		passthroughThread[i].max = max;
+		passthroughThread[i].threadID = i;
+		passthroughThread[i].threadCount = threadCount;
+		pthread_create(&threads[i], NULL, threading, &passthroughThread[i]);
+	}
+	for (int i = 0; i < threadCount; i++) {
+		pthread_join(threads[i], NULL);
+	}
+}
+
+
 
 
 /*
@@ -226,7 +277,7 @@ void show_help()
 	printf("-H <pixels> Height of the image in pixels. (default=1000)\n");
 	printf("-o <file>   Set output file. (default=mandel.bmp)\n");
 	printf("-c <count>  Set the number of children the program will have (default=8)\n");
-	printf("-t <count>  Set the number of threads the program will have (default=1)\n");
+	printf("-t <count>  Set the number of thread the program will have (default=1)\n");
 	printf("-h          Show this help text.\n");
 	printf("\nSome examples are:\n");
 	printf("mandel -x -0.5 -y -0.5 -s 0.2\n");
