@@ -39,10 +39,11 @@ int main( int argc, char *argv[] )
 	int    image_height = 1000;
 	int    max = 1000;
 	int    childCount = 8;
+	int    threadCount = 1;
 	// For each command line argument given,
 	// override the appropriate configuration value.
 
-	while((c = getopt(argc,argv,"x:y:s:W:H:m:o:c:h"))!=-1) {
+	while((c = getopt(argc,argv,"x:y:s:W:H:m:o:c:t:h"))!=-1) {
 		switch(c) 
 		{
 			case 'x':
@@ -68,6 +69,9 @@ int main( int argc, char *argv[] )
 				break;
 			case 'c':
 			    childCount = atoi(optarg);
+				break;
+			case 't':
+			    threadCount = atoi(optarg);
 				break;
 			case 'h':
 				show_help();
@@ -221,7 +225,8 @@ void show_help()
 	printf("-W <pixels> Width of the image in pixels. (default=1000)\n");
 	printf("-H <pixels> Height of the image in pixels. (default=1000)\n");
 	printf("-o <file>   Set output file. (default=mandel.bmp)\n");
-	printf("-c <count>  set the number of children the program will have (default=8)\n");
+	printf("-c <count>  Set the number of children the program will have (default=8)\n");
+	printf("-t <count>  Set the number of threads the program will have (default=1)\n");
 	printf("-h          Show this help text.\n");
 	printf("\nSome examples are:\n");
 	printf("mandel -x -0.5 -y -0.5 -s 0.2\n");
