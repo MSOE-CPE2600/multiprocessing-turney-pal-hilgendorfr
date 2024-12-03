@@ -22,8 +22,8 @@ Note as of completing lab 12: I realize this is probably not correct, but it was
 
 This time, the method compute_image() was modified. It was completely changed to decide the data, create, and finally join each thread. This data is then taken to a new method called threading() where the number of rows a thread will compute is decided, the start and end points are decided, and the original calculations from compute_image() are done instead.
 
-### Generated graph of Multithreading results based on number of threads and children:
+### Multithreading results based on number of threads and children:
 
-![graphLab12](./sysprog_lab12_graph.png)
+![graphLab12](./sysprog_lab12_table.png)
 
-Multithreading seemed to impact the runtime far more. I believe this is due to splitting up the workload each child handles. As seen with the first two tests, doing two threads instead of one on one child nearly halves the runtime. The game becomes exponentially less the more is added to each, but it does seem multithreading is the most effective. The sweet spot for both seems to be around 10-10. I tried 9-9 to show an odd number case, and also tested 20-20, which took marginally longer than 9-9. I did not include 20-20 on the graph due to constraining the space of the smaller tests too much.
+Multithreading seemed to impact the runtime far more than multiprocessing alone, and together they significantly improve processing speed. The table above shows my testing results. As it turns out, Linux doesn't like threading uneven numbers of threads so odd threads actually hurt performance. I personally found the best time to be from running 12 children with 16 threads. This was not necessarily the same case with my peers.
